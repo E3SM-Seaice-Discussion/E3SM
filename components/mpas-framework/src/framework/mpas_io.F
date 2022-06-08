@@ -393,7 +393,7 @@ module mpas_io
    end subroutine MPAS_io_inq_unlimited_dim
 
 
-   subroutine MPAS_io_inq_dim(handle, dimname, dimsize, ierr)
+   subroutine MPAS_io_inq_dim(handle, dimname, dimsize, ierr, pio_ierr)
 
       implicit none
 
@@ -401,10 +401,12 @@ module mpas_io
       character (len=*), intent(in) :: dimname
       integer, intent(out) :: dimsize
       integer, intent(out), optional :: ierr
+      integer, intent(out), optional :: pio_ierr
 
       type (dimlist_type), pointer :: new_dimlist_node
       type (dimlist_type), pointer :: dim_cursor
-      integer :: pio_ierr
+
+      pio_ierr = PIO_noerr
 
 !      call mpas_log_write('Called MPAS_io_inq_dim()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
