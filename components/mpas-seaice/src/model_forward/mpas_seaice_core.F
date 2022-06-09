@@ -274,7 +274,7 @@ module seaice_core
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
-      integer :: ierr
+      integer :: ierr, pio_ierr
 
       character(len=StrKIND), pointer :: config_restart_timestamp_name
 
@@ -335,7 +335,12 @@ module seaice_core
             call seaice_forcing_write_restart_times(domain)
          endif
 
-         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr, pio_ierr=pio_ierr)
+         if (ierr /= MPAS_STREAM_MGR_NOERR) then
+            call mpas_log_write("Stream manager error: MPAS error: $i, PIO error: $i", &
+                 messageType=MPAS_LOG_CRIT, &
+                 intArgs=(/ierr, pio_ierr/))
+         endif
 
          ! update the restart_timestamp file with the new time if needed
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &

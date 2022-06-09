@@ -134,7 +134,7 @@ module mpas_io_streams
    end subroutine MPAS_createStream
 
 
-   integer function MPAS_seekStream(stream, seekTime, seekPosition, actualTime, maxRecords, ierr)
+   integer function MPAS_seekStream(stream, seekTime, seekPosition, actualTime, maxRecords, ierr, pio_ierr)
 
       implicit none
 
@@ -144,8 +144,10 @@ module mpas_io_streams
       character (len=*), intent(out) :: actualTime
       integer, intent(out), optional :: maxRecords
       integer, intent(out), optional :: ierr
+      integer, intent(out), optional :: pio_ierr
       
       integer :: io_err
+      integer :: pio_err_local
       integer :: i
       integer :: timeDim
       character (len=ShortStrKIND), dimension(:), pointer :: xtimes
@@ -156,6 +158,9 @@ module mpas_io_streams
       character (len=ShortStrKIND) :: xtime0, xtime1, xtime2, xtimeGuess
       type (MPAS_Time_type) :: time0, time1, time2, timeGuess, timeGuessData
       type (MPAS_TimeInterval_type) :: timeInterval
+
+      pio_err_local = PIO_noerr
+      if (present(pio_ierr)) pio_ierr = pio_err_local
 
 !      call mpas_log_write('Called MPAS_seekStream')
 
@@ -172,12 +177,14 @@ module mpas_io_streams
       !
       if (.not. stream % isInitialized) then
          if (present(ierr)) ierr = MPAS_IO_ERR
+         if (present(pio_ierr)) pio_ierr = pio_err_local
          return
       end if
 
-      call MPAS_io_inq_dim(stream % fileHandle, 'Time', timeDim, io_err)
+      call MPAS_io_inq_dim(stream % fileHandle, 'Time', timeDim, io_err, pio_err_local)
       if (timeDim <= 0 .or. io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
+         if (present(pio_ierr)) pio_ierr = pio_err_local
          return
       end if
 
@@ -189,6 +196,7 @@ module mpas_io_streams
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
          if (present(maxRecords)) maxRecords = 0
+         if (present(pio_ierr)) pio_ierr = pio_err_local
          return
       end if
 
@@ -317,6 +325,7 @@ module mpas_io_streams
             call mpas_log_write('Error in MPAS_seekStream: unrecognized seekPosition', MPAS_LOG_ERR)
             deallocate(xtimes)
             if (present(ierr)) ierr = MPAS_IO_ERR
+            if (present(pio_ierr)) pio_ierr = pio_err_local
             return
          end if
       end do
@@ -324,6 +333,7 @@ module mpas_io_streams
       if (MPAS_seekStream == 0) then
          deallocate(xtimes)
          if (present(ierr)) ierr = MPAS_IO_ERR
+         if (present(pio_ierr)) pio_ierr = pio_err_local
          return
       end if
 

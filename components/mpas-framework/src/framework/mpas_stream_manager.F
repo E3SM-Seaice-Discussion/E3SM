@@ -2725,7 +2725,7 @@ module mpas_stream_manager
     !>  templates.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_write(manager, streamID, timeLevel, mgLevel, forceWriteNow, writeTime, ierr) !{{{
+    subroutine MPAS_stream_mgr_write(manager, streamID, timeLevel, mgLevel, forceWriteNow, writeTime, ierr, pio_ierr) !{{{
 
         implicit none
 
@@ -2736,6 +2736,7 @@ module mpas_stream_manager
         logical, intent(in), optional :: forceWriteNow
         character (len=*), intent(in), optional :: writeTime
         integer, intent(out), optional :: ierr
+        integer, intent(out), optional :: pio_ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
         integer :: blockID
@@ -2743,8 +2744,10 @@ module mpas_stream_manager
         integer :: local_mgLevel
         logical :: local_forceWrite
         integer :: local_ierr
+        integer :: local_pio_ierr
         type (MPAS_Time_type) :: local_writeTime
         integer :: temp_ierr
+        integer :: temp_pio_ierr
         integer :: threadNum
         logical :: wroteStreams
 
@@ -2752,6 +2755,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_write()')
         local_ierr = MPAS_STREAM_MGR_NOERR
+        local_pio_ierr = PIO_noerr
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
@@ -2803,7 +2807,7 @@ module mpas_stream_manager
 
                       wroteStreams = .true.
                       stream_cursor % blockWrite = .false.
-                      call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
+                      call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr, local_pio_ierr)
                       stream_cursor % mostRecentAccessTime = local_writeTime
                    end if
                end do
@@ -2811,6 +2815,7 @@ module mpas_stream_manager
                if ( .not. wroteStreams ) then
                    STREAM_ERROR_WRITE('No output stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_write().')
                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+                   if (present(pio_ierr)) pio_ierr = MPAS_STREAM_MGR_ERROR
                    return 
                end if
            else
@@ -2824,10 +2829,11 @@ module mpas_stream_manager
                        stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
                        stream_cursor % blockWrite = .false.
-                       call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
+                       call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr, temp_pio_ierr)
                        stream_cursor % mostRecentAccessTime = local_writeTime
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
+                           local_pio_ierr = temp_pio_ierr
                        end if
 
                    end if
@@ -2837,6 +2843,7 @@ module mpas_stream_manager
         end if
 
         if (present(ierr)) ierr = local_ierr
+        if (present(pio_ierr)) pio_ierr = local_pio_ierr
 
     end subroutine MPAS_stream_mgr_write !}}}
 
@@ -2902,8 +2909,10 @@ module mpas_stream_manager
         integer :: local_mgLevel
         logical :: local_forceWrite
         integer :: local_ierr
+        integer :: local_pio_ierr
         type (MPAS_Time_type) :: local_writeTime
         integer :: temp_ierr
+        integer :: temp_pio_ierr
         integer :: threadNum
         logical :: wroteStreams
 
@@ -2913,6 +2922,7 @@ module mpas_stream_manager
 
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_block_write()')
         local_ierr = MPAS_STREAM_MGR_NOERR
+        local_pio_ierr = PIO_noerr
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
@@ -2979,7 +2989,7 @@ module mpas_stream_manager
                       wroteStreams = .true.
                       stream_cursor % blockWrite = .true.
                       call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
-                                        local_forceWrite, local_writeTime, local_ierr)
+                                        local_forceWrite, local_writeTime, local_ierr, local_pio_ierr)
                       stream_cursor % mostRecentAccessTime = local_writeTime
                       stream_cursor % blockWrite = .false.
                       if ( associated(stream_cursor % stream) ) then
@@ -3007,7 +3017,7 @@ module mpas_stream_manager
 
                        stream_cursor % blockWrite = .true.
                        call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
-                                         local_forceWrite, local_writeTime, temp_ierr)
+                                         local_forceWrite, local_writeTime, temp_ierr, temp_pio_ierr)
                        stream_cursor % mostRecentAccessTime = local_writeTime
                        stream_cursor % blockWrite = .false.
                        if ( associated(stream_cursor % stream) ) then
@@ -3017,6 +3027,7 @@ module mpas_stream_manager
                        end if
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
+                           local_pio_ierr = temp_pio_ierr
                        end if
 
                    end if
@@ -3055,7 +3066,7 @@ module mpas_stream_manager
     !>  Private subroutine to handle the details of actually writing a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine write_stream(manager, stream, blockID, timeLevel, mgLevel, forceWritenow, writeTime, ierr) !{{{
+    subroutine write_stream(manager, stream, blockID, timeLevel, mgLevel, forceWritenow, writeTime, ierr, pio_ierr) !{{{
 
         use mpas_dmpar, only : IO_NODE
 
@@ -3069,6 +3080,7 @@ module mpas_stream_manager
         logical, intent(in) :: forceWriteNow
         type (MPAS_Time_type), intent(in) :: writeTime
         integer, intent(out) :: ierr
+        integer, intent(out) :: pio_ierr
 
         type (MPAS_stream_list_type), pointer :: alarm_cursor
         type (MPAS_Time_type) :: ref_time
@@ -3080,7 +3092,10 @@ module mpas_stream_manager
         logical :: ringing_alarm, recordSeek, swapRecords
         logical :: clobberRecords, clobberFiles, truncateFiles
         integer :: maxRecords, tempRecord
-        integer :: local_ierr, threadNum
+        integer :: local_ierr, local_pio_ierr, threadNum
+
+        pio_ierr = PIO_noerr
+        local_pio_ierr = pio_ierr
 
         threadNum = mpas_threading_get_thread_num()
 
@@ -3204,8 +3219,13 @@ module mpas_stream_manager
     
                    ! Look for exact record (in the case of overwriting)
                    ! This also gets the number of records in the file.
-                   stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                   STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
+                   stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr, local_pio_ierr)
+                   STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr COMMA local_pio_err/))
+                   if (local_ierr /= MPAS_STREAM_NOERR) then
+                      ierr = local_ierr
+                      pio_ierr = local_pio_ierr
+                      return
+                   endif
     
                    if ( stream % nRecords == 0 ) then
                        ! If we didn't find an exact time, set record to point to the end of the file.
@@ -3292,8 +3312,13 @@ module mpas_stream_manager
            
                        ! Look for exact record (in the case of overwriting)
                        ! This also gets the number of records in the file.
-                       stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                       STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
+                       stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr, local_pio_ierr)
+                       STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr COMMA local_pio_ierr/))
+                       if (local_ierr /= MPAS_STREAM_NOERR) then
+                          ierr = local_ierr
+                          pio_ierr = local_pio_ierr
+                          return
+                       endif
            
                        if ( stream % nRecords == 0 ) then
                            ! If we didn't find an exact time, set record to point to the end of the file.
@@ -3317,8 +3342,13 @@ module mpas_stream_manager
            
                        ! Look for exact record (in the case of overwriting)
                        ! This also gets the number of records in the file.
-                       tempRecord = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                       STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/tempRecord COMMA maxRecords COMMA local_ierr/))
+                       tempRecord = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr, local_pio_ierr)
+                       STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/tempRecord COMMA maxRecords COMMA local_ierr COMMA local_pio_ierr/))
+                       if (local_ierr /= MPAS_STREAM_NOERR) then
+                          ierr = local_ierr
+                          pio_ierr = local_pio_ierr
+                          return
+                       endif
            
                        if ( tempRecord /= 0 .and. stream % nRecords < maxRecords ) then
                            ! If we found an exact result
