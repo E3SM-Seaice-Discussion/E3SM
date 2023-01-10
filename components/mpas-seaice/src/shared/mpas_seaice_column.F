@@ -17,6 +17,7 @@ module seaice_column
   use mpas_timekeeping
   use mpas_timer
   use mpas_log, only: mpas_log_write
+  use seaice_partition, only: seaice_block_iterator
 
   use seaice_error
 
@@ -334,7 +335,7 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
 
@@ -402,7 +403,7 @@ contains
          initialMeltingTemperatureProfile
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
@@ -515,7 +516,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_do_restart_snow_grain_radius", config_do_restart_snow_grain_radius)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -747,7 +748,7 @@ contains
 
     ! other shortwave initialization
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -905,7 +906,7 @@ contains
          iCategory
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -987,7 +988,7 @@ contains
     if (config_use_level_ice .and. .not. config_do_restart) then
 
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
 
           call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
@@ -1501,7 +1502,7 @@ contains
     call get_day_of_year(clock, dayOfYear)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
@@ -2236,7 +2237,7 @@ contains
     checkCarbon = .false.
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
@@ -2546,7 +2547,7 @@ contains
          iCell
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -2732,7 +2733,7 @@ contains
          warnings
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -3049,7 +3050,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -3416,7 +3417,7 @@ contains
          abortLocation
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -3805,7 +3806,7 @@ contains
     checkCarbon = .false.
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
@@ -4362,7 +4363,7 @@ contains
 
     ! compute thermodynamic area and volume tendencies
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
        call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
@@ -4472,7 +4473,7 @@ contains
          setGetBGCTracers
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -4579,7 +4580,7 @@ contains
          nCategories
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -4765,7 +4766,7 @@ contains
          call seaice_column_ocean_mixed_layer(domain)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
        call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
@@ -5172,7 +5173,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregate)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
@@ -5443,7 +5444,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ocean_mixed_layer_type", config_ocean_mixed_layer_type)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
@@ -5631,7 +5632,7 @@ contains
     if (config_use_test_ice_shelf) then
 
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
 
           call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
 
@@ -12093,7 +12094,7 @@ contains
          dragFloeSeparation
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        !-----------------------------------------------------------------------
        ! tracers
@@ -12424,7 +12425,7 @@ contains
          dragFloeSeparation
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        !-----------------------------------------------------------------------
        ! tracers
@@ -12769,7 +12770,7 @@ contains
          ratioRidgeThicknessToIce
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "ridging", ridging)
        call MPAS_pool_get_array(ridging, "ratioRidgeThicknessToIce", ratioRidgeThicknessToIce)
@@ -12872,7 +12873,7 @@ contains
          config_use_column_package
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
@@ -12954,7 +12955,7 @@ contains
          config_use_column_snow_tracers
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
        call MPAS_pool_get_config(block % configs, "config_use_column_snow_tracers", config_use_column_snow_tracers)
@@ -13668,7 +13669,7 @@ contains
     setGetBGCTracers     = .true.
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
        call MPAS_pool_get_subpool(block % structs, "diagnostics_biogeochemistry", diagnostics_biogeochemistry)
@@ -13949,7 +13950,7 @@ contains
     if (config_use_column_package) then
 
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
 
           ! atmospheric fluxes
           call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxesPool)
@@ -14192,7 +14193,7 @@ contains
     if (config_use_column_package) then
 
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
 
           call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
 
@@ -14339,7 +14340,7 @@ contains
      if (config_use_column_package) then
 
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
 
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -14522,7 +14523,7 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
        call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -14917,7 +14918,7 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
        call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)

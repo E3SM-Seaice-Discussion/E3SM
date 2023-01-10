@@ -21,6 +21,7 @@ module seaice_initialize
   use mpas_abort
   use mpas_log, only: mpas_log_write
   use mpas_timer, only: mpas_timer_start, mpas_timer_stop
+  use seaice_partition, only: seaice_block_iterator
 
   implicit none
 
@@ -221,7 +222,7 @@ contains
          areaCell
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
@@ -297,7 +298,7 @@ contains
 
        ! set volumes/areas
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
 
           if (trim(config_initial_condition_type) == "uniform") then
 
@@ -388,7 +389,7 @@ contains
 
        ! other initialize variables
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
           call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
           call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
           call MPAS_pool_get_array(icestate, "iceAreaCellInitial", iceAreaCellInitial)
@@ -399,7 +400,7 @@ contains
 
        ! set velocities
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
 
           if (trim(config_initial_velocity_type) == "uniform") then
 
@@ -2167,7 +2168,7 @@ contains
          indexj
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        !-------------------------------------------------------------
        ! Physics fluxes received from atmosphere
@@ -2375,7 +2376,7 @@ contains
        lonLimitEast = lonLimitEast + 360.0_RKIND
 
        block => domain % blocklist
-       do while (associated(block))
+       do while (seaice_block_iterator(block))
 
           call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
           call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)

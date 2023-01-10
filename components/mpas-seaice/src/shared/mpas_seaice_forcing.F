@@ -21,6 +21,7 @@ module seaice_forcing
   use mpas_forcing
   use mpas_stream_manager
   use mpas_log, only: mpas_log_write
+  use seaice_partition, only: seaice_block_iterator
 
   implicit none
 
@@ -504,7 +505,7 @@ contains
     endif
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        ! convert the input forcing variables to the coupling variables
        select case (trim(config_atmospheric_forcing_type))
@@ -1800,7 +1801,7 @@ contains
     endif
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        if (trim(config_forcing_sst_type) == 'ncar' .or. &
            trim(config_forcing_sst_type) == 'som_varying_thickness') then
@@ -2180,7 +2181,7 @@ contains
          bergTemperature = -4.0_RKIND           ! iceberg temperature, assumed constant
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
@@ -2285,7 +2286,7 @@ contains
          config_use_column_biogeochemistry
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        ! physics
        call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxes)
@@ -2400,7 +2401,7 @@ contains
          config_use_data_icebergs
 
     block => domain % blocklist
-    do while (associated(block))
+    do while (seaice_block_iterator(block))
 
        ! physics
        call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxes)
