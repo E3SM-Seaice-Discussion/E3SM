@@ -86,7 +86,6 @@ def get_geom(path, file):
     fid = nc.Dataset("{}/{}".format(path, file), 'r')
     latCell = fid.variables['latCell'][:]
     lonCell = fid.variables['lonCell'][:]
-    # areaCell = fid.variables['areaCell'][:] # DC remove if not needed
     fid.close()
 
     return latCell, lonCell
@@ -100,18 +99,6 @@ def read_data(path_a, path_b, files_a, files_b):
     def fill_data_array(path, files):
         '''Function to fill the data arrays'''
         # # Initialize the data array
-        # data = np.zeros((len(files), nj, ni),dtype=np.float32)
-        # # Read in the data
-        # logger.debug('Reading in data for files in %s', path)
-        # cnt = 0
-        # for fname in sorted(files):
-        #     nfid = nc.Dataset("{}/{}".format(path, fname), 'r')
-        #     fill_value = nfid.variables[var]._FillValue
-        #     data[cnt, :, :] = nfid.variables[var][:]
-        #     cnt += 1
-        #     nfid.close()
-        # data[data == fill_value] = 0.0
-
         data = []
         cnt = 0
         logging.info("Reading data")
@@ -133,7 +120,7 @@ def read_data(path_a, path_b, files_a, files_b):
         every timestep is 0, or the sea ice thickness for every timestep is < 0.01 meters
         for data_a or data_b
         '''
-        logging.info("Diffing data") # DC add
+        logging.info("Diffing data")
         data_d = data_a - data_b
         mask_d = np.logical_or(\
                       np.logical_or(\
@@ -163,12 +150,12 @@ def read_data(path_a, path_b, files_a, files_b):
 
     return data_a, data_b, data_d
 
-def two_stage_test(data_a, num_samp, data_d, fname, path): # DC: change num_files to num_samp
+def two_stage_test(data_a, num_samp, data_d, fname, path):
     '''
     This function performs the Two-Stage Paired Thickness Test
     '''
     def stage_one(data_d, num_samp, mean_d, variance_d):
-        logging.info("Testing data") # DC add
+        logging.info("Testing data")
         logger.debug('Running step 1 of 2-stage test')
 
         # Calculate the mean from 1:end-1 and 2:end
@@ -198,22 +185,21 @@ def two_stage_test(data_a, num_samp, data_d, fname, path): # DC: change num_file
 
         # Effective degrees of freedom
         df = n_eff - 1
-        print('df is', df)
 
         # Read in t_crit table
         if os.path.exists('./CICE_t_critical_p0.8.nc'):
           nfid = nc.Dataset("./CICE_t_critical_p0.8.nc", 'r')
         else:
-          nfid = nc.Dataset("configuration/scripts/tests/QC/CICE_t_critical_p0.8.nc", 'r')
+          logger.error("Cannot locate file CICE_t_critical_p0.8.nc")
         df_table = nfid.variables['df'][:]
         t_crit_table = nfid.variables['tcrit'][:]
         nfid.close()
         t_crit = np.zeros_like(t_val)
 
         # Calculate critical t-value for each grid cell, based on the t_crit table
+        data_d = np.squeeze(data_d[:,0]) #DC testing
         for x in maenumerate(data_d):
-            print('x is', x) #DC remove
-            min_val = np.min(np.abs(df[x[0, :]]-df_table))
+            min_val = np.min(np.abs(df[x]-df_table))
             idx = np.where(np.abs(df[x]-df_table) == min_val)
             # Handle the cases where the data point falls exactly half way between
             # 2 critical T-values (i.e., idx has more than 1 value in it)
@@ -269,12 +255,13 @@ def two_stage_test(data_a, num_samp, data_d, fname, path): # DC: change num_file
     if os.path.exists('./CICE_Lookup_Table_p0.8_n1825.nc'):
       nfid = nc.Dataset("./CICE_Lookup_Table_p0.8_n1825.nc", 'r')
     else:
-      nfid = nc.Dataset("configuration/scripts/tests/QC/CICE_Lookup_Table_p0.8_n1825.nc", 'r')
+       logger.error("Cannot locate file CICE_Lookup_Table_p0.8_n1825.nc")
     r1_table = nfid.variables['r1'][:]
     t_crit_table = nfid.variables['tcrit'][:]
     nfid.close()
 
     # Fill t_crit based on lookup table
+    data_d = np.squeeze(data_d[:,0]) #DC testing
     for x in maenumerate(data_d):
         min_val = np.min(np.abs(r1[x]-r1_table))
         idx = np.where(np.abs(r1[x]-r1_table) == min_val)
@@ -336,6 +323,7 @@ def critical_fraction(data_a, failures, fname, path_a):
     # Calculate the area weight of the failing grid cells
     weight_tot = 0
     weight_fail = 0
+    data_a = np.squeeze(data_a[:,0]) #DC testing
     for x in maenumerate(data_a):
         weight_tot += area_weight[x]
         if failures[x]:
@@ -347,7 +335,7 @@ def skill_test(path_a, fname, data_a, data_b, num_samp, hemisphere):
     '''Calculate Taylor Skill Score'''
     # First calculate the weight attributed to each grid point (based on Area)
     nfid = nc.Dataset("{}/{}".format(path_a, fname), 'r')
-    tarea = nfid.variables['tarea'][:]
+    tarea = nfid.variables['areaCell'][:]
     nfid.close()
     tarea = ma.masked_array(tarea, mask=data_a[0, :].mask)
     area_weight = tarea / np.sum(tarea)
@@ -398,9 +386,10 @@ def skill_test(path_a, fname, data_a, data_b, num_samp, hemisphere):
         logger.info('Quadratic Skill Test Failed for %s Hemisphere', hemisphere)
         return False
 
-#DC start here
+### DC plot_data not yet working, produces empty plots, needs updating
+
 def plot_data(data, lat, lon, units, case, plot_type):
-    '''This function plots CICE data and creates a .png file.'''
+    '''This function plots MPAS-Seaice data and creates a .png file.'''
 
     try:
         # Load the necessary plotting libraries
@@ -475,7 +464,8 @@ def plot_data(data, lat, lon, units, case, plot_type):
 
     else:  # not a difference plot
         # specify colormap
-        mycmap = 'jet'
+        # mycmap = 'jet' # DC remove
+        mycmap = 'RdBu'
 
         # arbitrary limits for each Hemishpere
         cminNH = 0.0
@@ -569,8 +559,7 @@ def plot_data(data, lat, lon, units, case, plot_type):
         #                       extend='both')
 
 
-    #plt.suptitle('CICE Mean Ice Thickness\n{}'.format(case), y=0.95)
-    plt.suptitle(f'CICE Mean Ice Thickness\n{case:s}')
+    plt.suptitle(f'MPAS-Seaice Mean Ice Thickness\n{case:s}')
 
     # add more whitespace between plots for colorbar. 
     plt.subplots_adjust(wspace=0.4)
@@ -672,7 +661,7 @@ def plot_two_stage_failures(data, lat, lon):
         ax.gridlines(xlocs=mpLons,ylocs=mpLats,
                      draw_labels=mpLabels)
 
-        plt.title('CICE Two-Stage Test Failures')
+        plt.title('MPAS-Seaice Two-Stage Test Failures')
 
         # Create the colorbar and add Pass / Fail labels
         divider = make_axes_locatable(ax)
@@ -742,7 +731,7 @@ def main():
     # nfiles= len(files_base) #DC: what really want is nsamples; not relevant here with multiple times in monthly file
 
     # nlon, nlat, t_lat, t_lon = get_geom(dir_a, files_base[0])
-    # latCell, lonCell = get_geom(dir_a, files_base[0]) #DC: only needed for plotting
+    t_lat, t_lon = get_geom(dir_a, files_base[0])
 
     data_base, data_test, data_diff = read_data(dir_a, dir_b, files_base, files_test)
 
@@ -762,16 +751,15 @@ def main():
     if not PASSED:
         plot_two_stage_failures(H1_array, t_lat, t_lon)
         
-        # Create plots of mean ice thickness
-        baseDir = os.path.abspath(args.base_dir).rstrip('history/').rstrip(\
-                                                        'history').split('/')[-1]
-        testDir = os.path.abspath(args.test_dir).rstrip('history/').rstrip( \
-                                                        'history').split('/')[-1]
-        #DC: add plots back in later
-        # plot_data(np.mean(data_base,axis=0), t_lat, t_lon, 'm', baseDir, args.plot_type)
-        # plot_data(np.mean(data_test,axis=0), t_lat, t_lon, 'm', testDir, args.plot_type)
-        # plot_data(np.mean(data_base-data_test,axis=0), t_lat, t_lon, 'm', '{}\n- {}'.\
-        #           format(baseDir,testDir), args.plot_type)
+        # # Create plots of mean ice thickness
+        baseDir = os.path.abspath(args.base_dir).rstrip('run/').rstrip(\
+                                                        'run').split('/')[-1]
+        testDir = os.path.abspath(args.test_dir).rstrip('run/').rstrip( \
+                                                        'run').split('/')[-1]
+        plot_data(np.mean(data_base,axis=0), t_lat, t_lon, 'm', baseDir, args.plot_type)
+        plot_data(np.mean(data_test,axis=0), t_lat, t_lon, 'm', testDir, args.plot_type)
+        plot_data(np.mean(data_base-data_test,axis=0), t_lat, t_lon, 'm', '{}\n- {}'.\
+                  format(baseDir,testDir), args.plot_type)
 
         logger.error('Quality Control Test FAILED')
         sys.exit(-1)
@@ -780,9 +768,13 @@ def main():
     mask_tlat = t_lat < 0
     mask_nh = np.zeros_like(data_base)
     mask_sh = np.zeros_like(data_base)
-    for (a, b), val in np.ndenumerate(mask_tlat):
-        mask_nh[:, a, b] = val
-        mask_sh[:, a, b] = not val
+    # for (a, b), val in np.ndenumerate(mask_tlat):
+    #     mask_nh[:, a, b] = val
+    #     mask_sh[:, a, b] = not val
+    #DC test
+    for x, val in np.ndenumerate(mask_tlat):
+        mask_nh[:, x] = val
+        mask_sh[:, x] = not val    
 
     # Run skill test on northern hemisphere
     data_nh_a = ma.masked_array(data_base, mask=mask_nh)
@@ -805,15 +797,14 @@ def main():
     PASSED_SKILL = PASSED_NH and PASSED_SH
 
     # Plot the ice thickness data for the base and test cases
-    baseDir = os.path.abspath(args.base_dir).rstrip('history/').rstrip( \
-                                                    'history').split('/')[-1]
-    testDir = os.path.abspath(args.test_dir).rstrip('history/').rstrip( \
-                                                    'history').split('/')[-1]
-    # DC add plots in later
-    # plot_data(np.mean(data_base,axis=0), t_lat, t_lon, 'm', baseDir, args.plot_type)
-    # plot_data(np.mean(data_test,axis=0), t_lat, t_lon, 'm', testDir, args.plot_type)
-    # plot_data(np.mean(data_base-data_test,axis=0), t_lat, t_lon, 'm', '{}\n- {}'.\
-    #           format(baseDir,testDir), args.plot_type)
+    baseDir = os.path.abspath(args.base_dir).rstrip('run/').rstrip( \
+                                                    'run').split('/')[-1]
+    testDir = os.path.abspath(args.test_dir).rstrip('run/').rstrip( \
+                                                    'run').split('/')[-1]
+    plot_data(np.mean(data_base,axis=0), t_lat, t_lon, 'm', baseDir, args.plot_type)
+    plot_data(np.mean(data_test,axis=0), t_lat, t_lon, 'm', testDir, args.plot_type)
+    plot_data(np.mean(data_base-data_test,axis=0), t_lat, t_lon, 'm', '{}\n- {}'.\
+              format(baseDir,testDir), args.plot_type)
 
     logger.info('')
     if not PASSED_SKILL:
