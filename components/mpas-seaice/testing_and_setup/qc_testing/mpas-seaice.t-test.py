@@ -141,7 +141,7 @@ def read_data(path_a, path_b, files_a, files_b):
 
         return data_a, data_b, data_d
 
-    var = 'iceVolumeCell' # DC: need separate function to convert to thickness
+    var = 'iceThicknessCell'
 
     data_a = fill_data_array(path_a, files_a)
     data_b = fill_data_array(path_b, files_b)
