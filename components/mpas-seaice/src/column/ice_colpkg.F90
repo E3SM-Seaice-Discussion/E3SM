@@ -2235,7 +2235,8 @@
                                  Qa,           rhoa,         &
                                  fsnow,        fpond,        &
                                  fbot,         Tbot,         &
-                                 sss,          rsnw   (:,n), &
+                                 sst,          sss,          &
+                                 rsnw   (:,n),               &
                                  lhcoef,       shcoef,       &
                                  fswsfcn  (n), fswintn  (n), &
                                  Sswabsn(:,n), Iswabsn(:,n), &
