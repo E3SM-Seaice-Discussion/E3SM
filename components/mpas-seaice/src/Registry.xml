@@ -5,6 +5,9 @@
 		<dim name="nCells"
 			description="The number of polygons in the primary grid."
 		/>
+		<dim name="nCellsCulled" decomposition="uniform"
+			description="The number of culled polygons in the primary grid."
+		/>
 		<dim name="nEdges"
 			description="The number of edge midpoints in either the primary or dual grid."
 		/>
@@ -400,6 +403,10 @@
 		/>
 		<nml_option name="config_load_balance_timers" type="logical" default_value="false" units="unitless"
 			description="Determines if mpi barriers are used and timed before halo exchanges."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_culled_mesh" type="logical" default_value="false" units="unitless"
+			description="Allow sea ice to occupy subset of ocean mesh in E3SM"
 			possible_values=".true. or .false."
 		/>
 	</nml_record>
@@ -1952,6 +1959,11 @@
 			<var name="yCell"/>
 			<var name="zCell"/>
 			<var name="indexToCellID"/>
+			<var name="indexToOceanCellID"/>
+			<var name="indexToCulledCellID"/>
+			<var name="latCellCulled"/>
+			<var name="lonCellCulled"/>
+			<var name="areaCellCulled"/>
 			<var name="latEdge"/>
 			<var name="lonEdge"/>
 			<var name="xEdge"/>
@@ -2649,7 +2661,41 @@
 		/>
 	</var_struct>
 
+	<var_struct name="mesh_culled" time_levs="1" packages="pkgCulledMesh">
+		<var name="indexToOceanCellID"
+		     type="integer"
+		     dimensions="nCells"
+		     description="List of ocean mesh global cell IDs."
+		/>
+		<var name="indexToCulledCellID"
+		     type="integer"
+		     dimensions="nCellsCulled"
+		     description="List of culled mesh globals cell IDs."
+		/>
+		<var name="latCellCulled"
+		     type="real"
+		     dimensions="nCellsCulled"
+		     units="radians"
+		     description="Latitude location of culled cell centers in radians."
+		/>
+		<var name="lonCellCulled"
+		     type="real"
+		     dimensions="nCellsCulled"
+		     units="radians"
+		     description="Longitude location of culled cell centers in radians."
+		/>
+		<var name="areaCellCulled"
+		     type="real"
+		     dimensions="nCellsCulled"
+		     units="m2"
+		     description="Area of each cell in the primary grid."
+		/>
+	</var_struct>
+
 	<packages>
+
+		<!-- mesh packages -->
+		<package name="pkgCulledMesh" description=""/>
 
 		<!-- dynamics packages -->
 		<package name="pkgWeak" description=""/>
