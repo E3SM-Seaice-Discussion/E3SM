@@ -157,7 +157,13 @@ contains
     call MPAS_pool_get_config(domain % blocklist % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_earth_radius", earthRadius)
 
-    if (abs(earthRadius - SHR_CONST_REARTH) > 0.0) call mpas_log_write('Inconsistent Earth radii')
+      if (earthRadius /= SHR_CONST_REARTH) then
+
+         call mpas_log_write(&
+                  "Inconsistent: Earth radii: SHR_CONST_REARTH: $r, config_earth_radius: $r", &
+                  messageType=MPAS_LOG_CRIT, realArgs=(/SHR_CONST_REARTH,earthRadius/))
+
+      endif
 
     if (.not. config_do_restart) then
 
