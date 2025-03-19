@@ -452,7 +452,7 @@
 		/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
-		<nml_option name="config_earth_radius" type="real" default_value="6371229.0" units="m"
+		<nml_option name="config_earth_radius" type="real" default_value="6371220.0" units="m"
 			description="Earth radius in m"
 			possible_values="Any positive real number."
 		/>
