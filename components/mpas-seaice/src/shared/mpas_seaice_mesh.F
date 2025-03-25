@@ -292,7 +292,7 @@ contains
 
              call mpas_log_write(&
                   "rescale_mesh: inconsistent radii: sphere_radius: $r, earthRadius: $r", &
-                  messageType=MPAS_LOG_CRIT, realArgs=(/sphere_radius,earthRadius/))
+                  messageType=MPAS_LOG_WARN, realArgs=(/sphere_radius,earthRadius/))
 
           endif
 
