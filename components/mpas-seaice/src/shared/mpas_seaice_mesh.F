@@ -16,8 +16,9 @@ module seaice_mesh
   use mpas_pool_routines
   use mpas_dmpar
   use mpas_log, only: mpas_log_write
-
+#ifdef CCSMCOUPLED
   use shr_const_mod, only: SHR_CONST_REARTH
+#endif
 
   implicit none
 
@@ -156,7 +157,7 @@ contains
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_earth_radius", earthRadius)
-
+#ifdef CCSMCOUPLED
       if (earthRadius /= SHR_CONST_REARTH) then
 
          call mpas_log_write(&
@@ -164,7 +165,7 @@ contains
                   messageType=MPAS_LOG_CRIT, realArgs=(/SHR_CONST_REARTH,earthRadius/))
 
       endif
-
+#endif
     if (.not. config_do_restart) then
 
        block => domain % blocklist
