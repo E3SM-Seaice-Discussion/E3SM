@@ -16,6 +16,9 @@ module seaice_mesh
   use mpas_pool_routines
   use mpas_dmpar
   use mpas_log, only: mpas_log_write
+#ifdef CCSMCOUPLED
+  use shr_const_mod, only: SHR_CONST_REARTH
+#endif
 
   implicit none
 
@@ -154,7 +157,15 @@ contains
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_earth_radius", earthRadius)
+#ifdef CCSMCOUPLED
+      if (earthRadius /= SHR_CONST_REARTH) then
 
+         call mpas_log_write(&
+                  "Inconsistent: Earth radii: SHR_CONST_REARTH: $r, config_earth_radius: $r", &
+                  messageType=MPAS_LOG_CRIT, realArgs=(/SHR_CONST_REARTH,earthRadius/))
+
+      endif
+#endif
     if (.not. config_do_restart) then
 
        block => domain % blocklist
@@ -282,7 +293,7 @@ contains
 
              call mpas_log_write(&
                   "rescale_mesh: inconsistent radii: sphere_radius: $r, earthRadius: $r", &
-                  messageType=MPAS_LOG_CRIT, realArgs=(/sphere_radius,earthRadius/))
+                  messageType=MPAS_LOG_WARN, realArgs=(/sphere_radius,earthRadius/))
 
           endif
 
